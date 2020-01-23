@@ -1,0 +1,360 @@
+! ################################## !
+! PROGRAM:     TIC TAC TOE
+! DESCRIPTION: THIS PROGRAM EMULATES
+!              A GAME OF TIC TAC TOE
+!              BETWEEN HUMAN AND AI
+! NAME:        DANIEL DOMALIK
+! STUDENT ID:  0933553
+! DATE:        02/02/2018
+! COMPILER:    GFORTRAN
+! ################################## !
+
+PROGRAM TICTACTOE
+IMPLICIT NONE
+CALL playTicTacToe
+END PROGRAM TICTACTOE
+
+!
+! SUBROUTINE playTicTacToe
+!    STARTS AND RUNS THE TIC TAC TOE GAME
+SUBROUTINE playTicTacToe()
+CHARACTER * 1 :: TICTAC(9) = ' ', WINNER
+LOGICAL :: OVER
+
+WRITE (*,*) ''
+WRITE (*,*) 'WELCOME TO TIC-TAC-TOE'
+WRITE (*,*) '  ENTER 1-9 TO PLAY'
+WRITE (*,*) ''
+WRITE (*,*) '     1 | 2 | 3'
+WRITE (*,*) '    ---+---+---'
+WRITE (*,*) '     4 | 5 | 6'
+WRITE (*,*) '    ---+---+---'
+WRITE (*,*) '     7 | 8 | 9'
+WRITE (*,*) ''
+
+DO 
+    ! PLAYERS MOVE, CHECK IF GAME IS FINISHED
+    CALL getMove(TICTAC)
+    WRITE (*,*) ''
+    WRITE (*,*) 'YOUR MOVE ...'
+    CALL showBoard(TICTAC)
+    CALL CHKOVR(TICTAC,OVER,WINNER)
+    ! IF OVER, BREAK OUT OF LOOP
+    IF (OVER .EQV. .TRUE.) THEN
+        EXIT
+    END IF
+    ! AI MOVE, CHECK IF GAME IS FINISHED
+    CALL pickMove(TICTAC)
+    WRITE (*,*) 'MY MOVE ...'
+    CALL showBoard(TICTAC)
+    CALL CHKOVR(TICTAC,OVER,WINNER)
+    ! IF OVER, BREAK OUT OF LOOP
+    IF (OVER .EQV. .TRUE.) THEN
+        EXIT
+    END IF
+END DO
+
+! PRINT APPROPRIATE WIN MESSAGE
+IF (WINNER /= 'D') THEN
+    WRITE (*,*) ' GAME OVER!'
+    WRITE (*,*) 'WINNER IS: ', WINNER
+ELSE
+    WRITE (*,*) 'GAME OVER  !'
+    WRITE (*,*) '   DRAW'
+END IF
+WRITE (*,*) ''
+END SUBROUTINE playTicTacToe
+
+!
+! SUBROUTINE getMove
+!    READS THE HUMAN MOVE FROM INTEGERS 1-9 AND PLACES IT ON THE BOARD
+!
+!    Reference: Validate if input is INTEGER
+!    https://stackoverflow.com/questions/22073853/checking-input-type-in-fortran-read-statement
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           TICTAC - REPRESENTS THE CURRENT STATE OF THE GAME
+SUBROUTINE getMove(TICTAC)
+CHARACTER * 1 :: TICTAC(9)
+INTEGER :: MOVE, INTERROR
+LOGICAL :: CHKPLAY
+
+DO
+    WRITE (*,*) '------------------'
+    WRITE (*,"(A)", ADVANCE="NO") ' ENTER YOUR MOVE: '
+    READ (*,'(I10)', IOSTAT=INTERROR) MOVE
+
+    ! VERIFIES THAT INPUT IS AN INTEGER
+    IF (INTERROR == 0) THEN
+        ! VERIFIES THAT INTEGER IS IN BETWEEN 1 AND 9
+        IF (MOVE >= 1 .AND. MOVE <= 9) THEN
+            ! VERIFIES THAT SPACE IS NOT OCCUPIED
+            IF (CHKPLAY(TICTAC,MOVE) .EQV. .TRUE.) THEN
+                TICTAC(MOVE) = 'X'
+                WRITE (*,*) '------------------'
+                EXIT
+            ELSE
+                WRITE (*,*) 'INVALID INPUT! (SPACE ALREADY OCCUPIED)'
+            END IF
+        END IF
+    END IF
+    
+    IF (INTERROR /= 0 .OR. (MOVE < 1 .OR. MOVE > 9)) THEN
+        WRITE (*,*) 'INVALID INPUT! (INTEGERS FROM 1-9)'
+    END IF
+END DO
+
+RETURN
+END SUBROUTINE getMove
+
+!
+! SUBROUTINE pickMove
+!    GETS THE AI MOVE THROUGH ALGORITHM PROVIDED IN THE SPEC AND PLACES IT ON THE BOARD
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           TICTAC - REPRESENTS THE CURRENT STATE OF THE GAME
+SUBROUTINE pickMove(TICTAC)
+CHARACTER * 1 :: TICTAC(9)
+INTEGER :: MOVE, J, K, SUM
+
+! ROWS/HORIZONTAL CHECK
+SUM = 0
+J = 1
+K = 0
+DO WHILE (J /= 10)
+    DO WHILE (K /= 3)
+        IF (TICTAC(J + K) == 'O') THEN
+            SUM = SUM + 4
+        ELSE IF (TICTAC(J + K) == 'X') THEN
+            SUM = SUM + 1
+        ELSE IF (TICTAC(J + K) == ' ') THEN
+            MOVE = J + K
+        END IF
+        K = K + 1
+    END DO
+    IF (SUM == 8 .OR. SUM == 2) THEN
+        TICTAC(MOVE) = 'O'
+        RETURN
+    END IF
+    SUM = 0
+    K = 0
+    J = J + 3
+END DO
+
+! COLUMNS/VERTICAL CHECK
+SUM = 0
+K = 0
+J = 1
+DO WHILE (J /= 4)
+    DO WHILE (K /= 9)
+        IF (TICTAC(J + K) == 'O') THEN
+            SUM = SUM + 4
+        ELSE IF (TICTAC(J + K) == 'X') THEN
+            SUM = SUM + 1
+        ELSE IF (TICTAC(J + K) == ' ') THEN
+            MOVE = J + K
+        END IF
+        K = K + 3
+    END DO
+    IF (SUM == 8 .OR. SUM == 2) THEN
+        TICTAC(MOVE) = 'O'
+        RETURN
+    END IF
+    SUM = 0
+    K = 0
+    J = J + 1
+END DO
+
+! DIAGONAL CHECK (LEFT TO RIGHT / CELLS 1, 5, 9)
+SUM = 0
+J = 1
+DO WHILE (J /= 13)
+    IF (TICTAC(J) == 'O') THEN
+        SUM = SUM + 4
+    ELSE IF (TICTAC(J) == 'X') THEN
+        SUM = SUM + 1
+    ELSE IF (TICTAC(J) == ' ') THEN
+        MOVE = J
+    END IF
+    J = J + 4
+END DO
+IF (SUM == 8 .OR. SUM == 2) THEN
+    TICTAC(MOVE) = 'O'
+    RETURN
+END IF
+
+! DIAGONAL CHECK (RIGHT TO LEFT / CELLS 3, 5, 7)
+SUM = 0
+J = 3
+DO WHILE (J /= 9)
+    IF (TICTAC(J) == 'O') THEN
+        SUM = SUM + 4
+    ELSE IF (TICTAC(J) == 'X') THEN
+        SUM = SUM + 1
+    ELSE IF (TICTAC(J) == ' ') THEN
+        MOVE = J
+    END IF
+    J = J + 2
+END DO
+IF (SUM == 8 .OR. SUM == 2) THEN
+    TICTAC(MOVE) = 'O'
+    RETURN
+END IF
+
+! RANDOM PLACEMENT
+DO
+    MOVE = INT(RAND(0) * 9) + 1
+    IF (TICTAC(MOVE) == ' ') THEN
+        TICTAC(MOVE) = 'O'
+        RETURN
+    END IF
+END DO
+END SUBROUTINE pickMove
+
+!
+! SUBROUTINE showBoard
+!    PRINTS THE BOARD FOR THE TIC TAC TOE GAME
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           TICTAC - REPRESENTS THE CURRENT STATE OF THE GAME
+SUBROUTINE showBoard(TICTAC)
+CHARACTER * 1 :: TICTAC(9)
+
+WRITE (*,*) ''
+WRITE (*,*) '     ',TICTAC(1),' | ',TICTAC(2),' | ',TICTAC(3)
+WRITE (*,*) '    ---+---+---'
+WRITE (*,*) '     ',TICTAC(4),' | ',TICTAC(5),' | ',TICTAC(6)
+WRITE (*,*) '    ---+---+---'
+WRITE (*,*) '     ',TICTAC(7),' | ',TICTAC(8),' | ',TICTAC(9)
+WRITE (*,*) ''
+END SUBROUTINE showBoard
+
+!
+! SUBROUTINE CHKOVR
+!   CHECK IF TIC-TAC-TOE IS OVER AND DETERMINE WINNER (IF ANY)
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           TICTAC - REPRESENTS THE CURRENT STATE OF THE GAME
+!       OUTPUT ARGUMENTS
+!           OVER - INDICATES WHETHER OR NOT GAME IS OVER
+!           WINNER - INDICATES THE WINNER (O OR X) OR A DRAW (D)
+SUBROUTINE CHKOVR(TICTAC, OVER, WINNER)
+CHARACTER * 1 :: TICTAC(9), WINNER
+LOGICAL :: OVER
+
+! SUBROUTINE PARAMETERS
+CHARACTER * 1 :: BLANK, DRAW
+PARAMETER (BLANK = ' ', DRAW = 'D')
+! FUNCTIONS USED
+LOGICAL :: SAME
+! LOCAL VARIABLES
+INTEGER :: I
+! ASSUME GAME IS OVER AT START
+OVER = .TRUE.
+
+! CHECK ROWS FOR A WINNER
+I = 0
+DO WHILE (I < 10)
+    IF (SAME(TICTAC(1 + I), TICTAC(2 + I), TICTAC(3 + I))) THEN
+        WINNER = TICTAC(1 + I)
+        RETURN
+    ENDIF
+    I = I + 3
+END DO
+
+! NO WINNER BY ROWS, CHECK COLUMNS FOR A WINNER
+I = 0
+DO WHILE (I < 3)
+    IF (SAME(TICTAC(1 + I), TICTAC(4 + I), TICTAC(7 + I))) THEN
+        WINNER = TICTAC(1 + I)
+        RETURN
+    ENDIF
+    I = I + 1
+END DO
+
+! NO WINNER BY ROWS OR COLUMNS, CHECK DIAGONALS FOR A WINNER
+IF (SAME(TICTAC(1), TICTAC(5), TICTAC(9)) .OR. SAME(TICTAC(3), TICTAC(5), TICTAC(7))) THEN
+    WINNER = TICTAC(5)
+    RETURN
+END IF
+
+! NO WINNER AT ALL. SEE IF GAME IS A DRAW, CHECK EACH ROW FOR AN EMPTY SPACE
+I = 1
+DO WHILE (I < 10)
+    IF (TICTAC(I) == BLANK) THEN
+        OVER = .FALSE.
+        RETURN
+    END IF
+    I = I + 1
+END DO
+
+! NO BLANK FOUND, GAME IS A DRAW
+WINNER = DRAW
+
+RETURN
+END
+
+!
+! LOGICAL FUNCTION CHKPLAY
+!    VERIFIES INPUT IS AN AVAILABLE, PLAYABLE SPOT
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           TICTAC - REPRESENTS THE CURRENT STATE OF THE GAME
+!           MOVE - REPRESENTS THE PLAYERS MOVE
+!       OUTPUT ARGUMENTS
+!           CHKPLAY - INDICATES WHETHER OR NOT THE MOVE IS VALID
+LOGICAL FUNCTION CHKPLAY(TICTAC,MOVE)
+CHARACTER * 1 :: TICTAC(9)
+INTEGER :: MOVE
+
+IF (MOVE == 1 .AND. TICTAC(1) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 2 .AND. TICTAC(2) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 3 .AND. TICTAC(3) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 4 .AND. TICTAC(4) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 5 .AND. TICTAC(5) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 6 .AND. TICTAC(6) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 7 .AND. TICTAC(7) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 8 .AND. TICTAC(8) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE IF (MOVE == 9 .AND. TICTAC(9) == " ") THEN
+    CHKPLAY = .TRUE.
+ELSE
+    CHKPLAY = .FALSE.
+END IF
+RETURN
+END FUNCTION CHKPLAY
+
+!
+! LOGICAL FUNCTION SAME
+!   TEST IF THE THREE ELEMENTS PROVIDED ARE THE SAME ('X' or 'O')
+!
+!     ARGUMENT DEFINITIONS --
+!       INPUT ARGUMENTS
+!           T1 - FIRST ELEMENT ('X', 'O', OR ' ')
+!           T2 - SECOND ELEMENT ('X', 'O', OR ' ')
+!           T3 - THIRD ELEMENT ('X', 'O', OR ' ')
+!       OUTPUT ARGUMENTS
+!           SAME - INDICATES WHETHER OR NOT ALL ELEMENTS ARE THE SAME
+LOGICAL FUNCTION SAME(T1,T2,T3)
+CHARACTER * 1 :: T1, T2, T3
+
+SAME = .FALSE.
+IF (T1 == 'X' .AND. T2 == 'X' .AND. T3 == 'X') THEN
+    SAME = .TRUE.
+ELSE IF (T1 == 'O' .AND. T2 == 'O' .AND. T3 == 'O') THEN
+    SAME = .TRUE.
+END IF
+RETURN
+END FUNCTION SAME
